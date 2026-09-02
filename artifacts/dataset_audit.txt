@@ -1,0 +1,14 @@
+SIH dataset audit
+=================
+Total image candidates: 8070
+Valid pairs: 8070
+Invalid pairs: 0
+Sensors (valid): {'palsar': 3877, 'sentinel': 4193}
+Valid empty masks: 331
+Reasons: {}
+
+Training gate:
+- Use status=valid rows only.
+- Review empty masks; retain them only as intentional negatives.
+- Check duplicate image_sha256 values before final splitting.
+- Keep scene-level/group-level separation when GeoTIFF metadata is available.

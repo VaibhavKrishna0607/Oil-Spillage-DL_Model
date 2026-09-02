@@ -1,0 +1,164 @@
+# Data Pipeline — Person 1 Deliverable
+## SAR Oil Spill Detection · SIH 2026
+
+---
+
+## What this folder contains
+
+```
+data_pipeline/
+├── __init__.py          # Package marker
+├── dataset.py           # PyTorch Dataset class  ← start here
+├── augmentations.py     # All joint image+mask transforms
+├── dataloaders.py       # DataLoader factory (train/val/test)
+├── prepare_splits.py    # One-time split generation script
+└── sanity_check.py      # Full dataset audit + visual plot
+    build_manifest.py     # Reproducible CSV audit and training gate
+```
+
+---
+
+## Dataset Facts (verified by running inspect_data.py)
+
+| Property | Value |
+|---|---|
+| Total samples | **8,070** |
+| Train split | 6,455 images (Images/images/train) |
+| Val split | 1,615 images (Images/images/val) |
+| Image size | 256 × 256 pixels |
+| Image mode | RGB (3-channel) |
+| Mask mode | Grayscale (L) — pixel values {0, 255} |
+| Sensor types | PALSAR (ALOS-2) + Sentinel-1 |
+| Corrupted files | **0** ✓ |
+| Dimension mismatches | **0** ✓ |
+| All-black masks (train) | 255 / 6455 (3.9%) |
+| All-white masks (train) | 36 / 6455 (0.6%) |
+| Oil pixels (overall) | 134,153,832 — **25.4%** of all pixels |
+| Background pixels | 394,721,688 — **74.6%** of all pixels |
+| Class imbalance bg/oil | **2.9×** (mild — Dice loss handles this well) |
+
+---
+
+## Our 80/10/10 Split
+
+Run `prepare_splits.py` once to generate the split files:
+
+```bash
+python data_pipeline/prepare_splits.py --root .
+```
+
+This produces:
+
+| File | Samples | Source |
+|---|---|---|
+| `split_train.txt` | 5,164 | Images/images/train (80% after shuffle) |
+| `split_val.txt` | 1,615 | Images/images/val (original val, kept intact) |
+| `split_test.txt` | 1,291 | Images/images/train (held-out 20%, never touched until final eval) |
+
+The split is **seeded** (seed=42) — every run produces the same assignment.
+
+---
+
+## How P2 (ML Engineer) loads the data
+
+### Required data gate before training
+
+Run the manifest builder before creating or regenerating split files:
+
+```bash
+python data_pipeline/build_manifest.py --root .
+```
+
+This creates `artifacts/dataset_manifest.csv` and `artifacts/dataset_audit.txt`.
+The manifest does not alter source data. It records pair validity, dimensions,
+sensor, oil-pixel fraction, bounding box, and SHA-256 hashes. Do not train on
+rows with `status=invalid`; review empty masks as intentional negative examples.
+Duplicate hashes must be checked before a final split. Once full GeoTIFF scenes
+are introduced, split by scene/acquisition rather than by patch filename to
+prevent spatial leakage.
+
+The current PNG patches have no latitude/longitude transform. Their centroids
+are pixel coordinates only. Real map coordinates require inference on a
+georeferenced Sentinel-1 GeoTIFF or a sidecar metadata file.
+
+```python
+from data_pipeline.dataloaders import build_dataloaders
+
+# Make sure split files exist first:
+#   python data_pipeline/prepare_splits.py --root .
+
+loaders = build_dataloaders(root='.', batch_size=16, num_workers=4)
+
+for images, masks in loaders['train']:
+    # images : torch.Tensor  shape (B, 3, 256, 256)  float32  normalised
+    # masks  : torch.Tensor  shape (B, 1, 256, 256)  float32  binary {0, 1}
+    ...
+```
+
+That's it. One import, one call.
+
+---
+
+## Augmentation Strategy
+
+Chosen specifically for SAR ocean imagery:
+
+| Transform | Probability | Rationale |
+|---|---|---|
+| Horizontal flip | 50% | Ocean has no left/right preference |
+| Vertical flip | 50% | Orbit direction varies |
+| 90° rotation | 50% | Arbitrary heading in SAR scenes |
+| Brightness jitter ±25% | always | Sensor calibration differences |
+| Contrast jitter ±20% | always | Backscatter variation |
+| Gaussian noise (σ≤0.04) | 30% | SAR speckle simulation |
+
+All transforms are **joint** — image and mask receive the same spatial operation so they never go out of sync.
+
+---
+
+## Class Imbalance Note
+
+**Verified numbers (full dataset scan):**
+- Oil pixels: **25.4%** of all pixels
+- Background: **74.6%**
+- Class imbalance ratio: **2.9×** (background vs. oil)
+
+This is manageable — it's not the extreme 100× imbalance seen in some medical datasets.
+P2 must still account for it:
+
+- Use **Dice loss** or **BCE + Dice combo** (not plain BCE)
+- Consider `pos_weight=2.9` in `BCEWithLogitsLoss` as a starting point
+- Report **IoU and F1** not just accuracy (accuracy is misleading with class imbalance)
+
+---
+
+## Running the Sanity Check
+
+```bash
+pip install matplotlib
+python data_pipeline/sanity_check.py --root .
+```
+
+Output:
+- Console report (class balance, missing files, dim mismatches)
+- `sanity_plot.png` — 8 random image + mask overlay pairs for visual confirmation
+
+---
+
+## Folder Structure Expected
+
+```
+SIH/                         ← project root
+├── Images/
+│   └── images/
+│       ├── train/           ← palsar_*.png  +  sentinel_*.png
+│       └── val/
+├── Masks/
+│   └── masks/
+│       ├── train/           ← same filenames as images
+│       └── val/
+├── split_train.txt          ← generated by prepare_splits.py
+├── split_val.txt
+├── split_test.txt
+└── data_pipeline/           ← this package
+```

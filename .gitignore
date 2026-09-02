@@ -1,0 +1,11 @@
+.venv/
+Images/
+Masks/
+dataset_ready/
+dataset-1/
+Oil Spill Detection Dataset/
+__pycache__/
+*.pyc
+
+ml_model/checkpoints/
+ml_model/checkpoints_dry/
