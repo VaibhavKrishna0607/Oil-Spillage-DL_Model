@@ -13,6 +13,10 @@ from PIL import Image
 import torch
 
 from ml_model.model import UNet
+try:
+    from ml_model.model_enhanced import AttentionUNet
+except ImportError:
+    AttentionUNet = None
 
 DEFAULT_STATS = {
     "clip_2": 14.0,
@@ -33,7 +37,7 @@ def load_norm_stats(root: Path) -> dict:
     return DEFAULT_STATS
 
 
-def load_checkpoint(model_path: str, device: torch.device) -> Tuple[UNet, dict]:
+def load_checkpoint(model_path: str, device: torch.device) -> Tuple[torch.nn.Module, dict]:
     path = Path(model_path)
     ext = path.suffix.lower()
     meta = {"n_channels": 1, "base": 64}
@@ -50,13 +54,27 @@ def load_checkpoint(model_path: str, device: torch.device) -> Tuple[UNet, dict]:
     if isinstance(ckpt, dict) and "state_dict" in ckpt:
         n_channels = int(ckpt.get("n_channels", 1))
         base = int(ckpt.get("base", 64))
-        model = UNet(n_channels=n_channels, n_classes=1, bilinear=False, base=base)
-        model.load_state_dict(ckpt["state_dict"])
-        meta = {"backend": "pytorch", "n_channels": n_channels, "base": base, "val_dice": ckpt.get("val_dice")}
+        arch = ckpt.get("arch", "standard")
+        if arch == "attention" and AttentionUNet is not None:
+            model = AttentionUNet(n_channels=n_channels, n_classes=1, base=base)
+        else:
+            model = UNet(n_channels=n_channels, n_classes=1, bilinear=False, base=base)
+        
+        # Load with strict=False to handle attention layer mismatches
+        try:
+            model.load_state_dict(ckpt["state_dict"])
+        except RuntimeError as e:
+            if "Missing key(s) in state_dict" in str(e) and "attn" in str(e):
+                print(f"⚠️ Loading with strict=False due to attention layer mismatch")
+                model.load_state_dict(ckpt["state_dict"], strict=False)
+            else:
+                raise e
+                
+        meta = {"backend": "pytorch", "n_channels": n_channels, "base": base, "arch": arch, "val_dice": ckpt.get("val_dice"), "val_iou": ckpt.get("val_iou")}
     else:
         model = UNet(n_channels=1, n_classes=1, bilinear=False, base=64)
         model.load_state_dict(ckpt)
-        meta = {"backend": "pytorch", "n_channels": 1, "base": 64}
+        meta = {"backend": "pytorch", "n_channels": 1, "base": 64, "arch": "standard"}
     model.to(device)
     model.eval()
     return model, meta

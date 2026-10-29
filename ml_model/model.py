@@ -2,6 +2,34 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+class AttentionBlock(nn.Module):
+    """
+    Channel-wise and spatial attention mechanism to focus on important regions.
+    Applied after encoder blocks to weight important features.
+    """
+    def __init__(self, channels: int):
+        super(AttentionBlock, self).__init__()
+        self.channel_attention = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(channels, channels // 16, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channels // 16, channels, 1),
+            nn.Sigmoid()
+        )
+        self.spatial_attention = nn.Sequential(
+            nn.Conv2d(channels, 1, kernel_size=1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        ca = self.channel_attention(x)
+        x = x * ca
+        sa = self.spatial_attention(x)
+        x = x * sa
+        return x
+
+
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
     def __init__(self, in_channels, out_channels, mid_channels=None):
@@ -67,17 +95,19 @@ class OutConv(nn.Module):
 
 class UNet(nn.Module):
     """
-    U-Net for SAR oil-spill segmentation.
+    U-Net for SAR oil-spill segmentation with attention mechanisms and improved architecture.
     Default input: (B, 1, H, W) grayscale backscatter.
     Output: (B, 1, H, W) probability map.
     ``base`` scales channel width (64 = classic U-Net, 32 = faster CPU lab model).
+    ``use_attention`` adds spatial/channel attention for better focus on boundaries.
     """
-    def __init__(self, n_channels=1, n_classes=1, bilinear=False, base=64):
+    def __init__(self, n_channels=1, n_classes=1, bilinear=False, base=64, use_attention=True):
         super(UNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
         self.base = base
+        self.use_attention = use_attention
 
         c1, c2, c3, c4 = base, base * 2, base * 4, base * 8
         factor = 2 if bilinear else 1
@@ -89,10 +119,20 @@ class UNet(nn.Module):
         self.down3 = Down(c3, c4)
         self.down4 = Down(c4, c5)
 
+        # Optional attention after downsampling blocks
+        if use_attention:
+            self.attn4 = AttentionBlock(c5)
+            self.attn3 = AttentionBlock(c4)
+            self.attn2 = AttentionBlock(c3)
+            self.attn1 = AttentionBlock(c2)
+
         self.up1 = Up(c5 + c4 if bilinear else c4 * 2, c4 // factor, bilinear)
         self.up2 = Up((c4 // factor) + c3 if bilinear else c4, c3 // factor, bilinear)
         self.up3 = Up((c3 // factor) + c2 if bilinear else c3, c2 // factor, bilinear)
         self.up4 = Up((c2 // factor) + c1 if bilinear else c2, c1, bilinear)
+        
+        # Add dropout before final output for regularization
+        self.dropout = nn.Dropout2d(0.2)
         self.outc = OutConv(c1, n_classes)
 
     def forward(self, x):
@@ -101,10 +141,20 @@ class UNet(nn.Module):
         x3 = self.down2(x2)
         x4 = self.down3(x3)
         x5 = self.down4(x4)
+        
+        # Apply attention
+        if self.use_attention:
+            x5 = self.attn4(x5)
+            x4 = self.attn3(x4)
+            x3 = self.attn2(x3)
+            x2 = self.attn1(x2)
+        
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
+        
+        x = self.dropout(x)
         logits = self.outc(x)
         # Use sigmoid to get probability maps since it's binary classification
         return torch.sigmoid(logits)

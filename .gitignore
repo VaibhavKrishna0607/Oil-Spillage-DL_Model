@@ -9,3 +9,8 @@ __pycache__/
 
 ml_model/checkpoints/
 ml_model/checkpoints_dry/
+
+.DS_Store
+*.pt
+*.pth
+*.onnx

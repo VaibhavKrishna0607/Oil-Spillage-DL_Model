@@ -22,7 +22,7 @@ def main():
     parser = argparse.ArgumentParser(description="SAR oil-spill inference")
     parser.add_argument("--image", type=str, required=True)
     parser.add_argument("--model", type=str, default="ml_model/checkpoints/best_model.pth")
-    parser.add_argument("--threshold", type=float, default=0.5)
+    parser.add_argument("--threshold", type=float, default=0.2)
     parser.add_argument("--pixel-res", type=float, default=10.0)
     parser.add_argument("--output-image", type=str, default="ml_model/detection_overlay.png")
     parser.add_argument("--root", type=str, default=".")

@@ -1,0 +1,353 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Training Monitor - Oil Spill Detection</title>
+    <meta http-equiv="refresh" content="5">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4CAF50;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .status-box {
+            background: #2d2d2d;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .metric {
+            display: inline-block;
+            margin: 10px 20px;
+            padding: 15px;
+            background: #333;
+            border-radius: 8px;
+            min-width: 150px;
+        }
+        .metric-label {
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .metric-value {
+            color: #4CAF50;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .metric-value.warn {
+            color: #FF9800;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #2d2d2d;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        th {
+            background: #333;
+            color: #4CAF50;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background: #333;
+        }
+        .best-row {
+            background: #1a472a !important;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .status-running {
+            background: #4CAF50;
+            color: white;
+        }
+        .status-stopped {
+            background: #f44336;
+            color: white;
+        }
+        .chart-container {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Training Monitor - Oil Spill Detection Model</h1>
+        
+        <div class="status-box">
+            <h2>Training Status: <span class="status-badge status-running">RUNNING</span></h2>
+            <p><strong>Model:</strong> dataset2_continued.pth (Option C - Aggressive)</p>
+            <p><strong>Config:</strong> Batch=8, LR=2e-5, Patience=10</p>
+            <p><strong>Elapsed:</strong> 6.4 hrs</p>
+            <p><strong>Last Update:</strong> 2026-09-11 07:57:49</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: 75%;">
+                Epoch 15/20 (75%)
+            </div>
+        </div>
+
+        <div style="margin: 30px 0;">
+            <div class="metric">
+                <div class="metric-label">Current Val Dice</div>
+                <div class="metric-value">48.79%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Best Val Dice</div>
+                <div class="metric-value">49.08%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Baseline</div>
+                <div class="metric-value">48.74%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Improvement</div>
+                <div class="metric-value warn">+0.7%</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2>📊 Epoch History (15 epochs completed)</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Epoch</th>
+                        <th>Train Loss</th>
+                        <th>Train Dice</th>
+                        <th>Val Loss</th>
+                        <th>Val IoU</th>
+                        <th>Val Dice</th>
+                        <th>Threshold</th>
+                        <th>LR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+        <tr class="">
+            <td>15</td>
+            <td>0.0122</td>
+            <td>62.00%</td>
+            <td>0.4414</td>
+            <td>39.26%</td>
+            <td>48.79%</td>
+            <td>0.55</td>
+            <td>6.55e-06</td>
+        </tr>
+        
+        <tr class="">
+            <td>14</td>
+            <td>0.0136</td>
+            <td>61.91%</td>
+            <td>0.4391</td>
+            <td>39.26%</td>
+            <td>48.69%</td>
+            <td>0.60</td>
+            <td>8.19e-06</td>
+        </tr>
+        
+        <tr class="">
+            <td>13</td>
+            <td>0.0127</td>
+            <td>61.83%</td>
+            <td>0.4409</td>
+            <td>38.89%</td>
+            <td>48.44%</td>
+            <td>0.60</td>
+            <td>8.19e-06</td>
+        </tr>
+        
+        <tr class="">
+            <td>12</td>
+            <td>0.0128</td>
+            <td>61.91%</td>
+            <td>0.4426</td>
+            <td>38.87%</td>
+            <td>48.33%</td>
+            <td>0.60</td>
+            <td>8.19e-06</td>
+        </tr>
+        
+        <tr class="">
+            <td>11</td>
+            <td>0.0118</td>
+            <td>61.96%</td>
+            <td>0.4416</td>
+            <td>38.53%</td>
+            <td>48.07%</td>
+            <td>0.60</td>
+            <td>1.02e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>10</td>
+            <td>0.0118</td>
+            <td>61.81%</td>
+            <td>0.4374</td>
+            <td>38.75%</td>
+            <td>48.27%</td>
+            <td>0.60</td>
+            <td>1.02e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>9</td>
+            <td>0.0134</td>
+            <td>62.03%</td>
+            <td>0.4402</td>
+            <td>38.98%</td>
+            <td>48.53%</td>
+            <td>0.60</td>
+            <td>1.02e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>8</td>
+            <td>0.0129</td>
+            <td>61.90%</td>
+            <td>0.4415</td>
+            <td>39.51%</td>
+            <td>48.97%</td>
+            <td>0.60</td>
+            <td>1.28e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>7</td>
+            <td>0.0133</td>
+            <td>61.74%</td>
+            <td>0.4395</td>
+            <td>38.60%</td>
+            <td>48.07%</td>
+            <td>0.60</td>
+            <td>1.28e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>6</td>
+            <td>0.0136</td>
+            <td>61.95%</td>
+            <td>0.4385</td>
+            <td>39.36%</td>
+            <td>48.77%</td>
+            <td>0.60</td>
+            <td>1.28e-05</td>
+        </tr>
+        
+        <tr class="best-row">
+            <td>5 ★</td>
+            <td>0.0124</td>
+            <td>61.88%</td>
+            <td>0.4442</td>
+            <td>39.45%</td>
+            <td>49.08%</td>
+            <td>0.60</td>
+            <td>1.60e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>4</td>
+            <td>0.0129</td>
+            <td>61.91%</td>
+            <td>0.4368</td>
+            <td>39.36%</td>
+            <td>48.86%</td>
+            <td>0.60</td>
+            <td>1.60e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>3</td>
+            <td>0.0130</td>
+            <td>62.02%</td>
+            <td>0.4450</td>
+            <td>38.56%</td>
+            <td>48.13%</td>
+            <td>0.60</td>
+            <td>1.60e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>2</td>
+            <td>0.0118</td>
+            <td>61.79%</td>
+            <td>0.4389</td>
+            <td>39.18%</td>
+            <td>48.64%</td>
+            <td>0.60</td>
+            <td>2.00e-05</td>
+        </tr>
+        
+        <tr class="">
+            <td>1</td>
+            <td>0.0113</td>
+            <td>61.90%</td>
+            <td>0.4419</td>
+            <td>38.82%</td>
+            <td>48.39%</td>
+            <td>0.60</td>
+            <td>2.00e-05</td>
+        </tr>
+        
+                </tbody>
+            </table>
+            
+        </div>
+
+        <div class="status-box">
+            <h3>🎯 Target: 95%+ Val Dice for deployment</h3>
+            <p><strong>Current Progress:</strong> 48.79% → Target: 95%</p>
+            <p><strong>Remaining:</strong> 46.21 percentage points</p>
+        </div>
+
+        <p style="text-align: center; color: #666; margin-top: 40px;">
+            Auto-refreshes every 5 seconds
+        </p>
+    </div>
+</body>
+</html>
+    
